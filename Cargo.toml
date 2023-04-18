@@ -1,0 +1,16 @@
+[package]
+name = "ratls"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+x509-parser = "0.15.0"
+openssl = { version = "0.10", features = ["vendored"] }
+rustls = { version = "0.20.8", features = [
+  "dangerous_configuration",
+  "tls12",
+  "logging",
+] }
+log = "0.4.17"

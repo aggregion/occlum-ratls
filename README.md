@@ -1,1 +1,1 @@
-# Remote Attestation integrated in TLS connection
+# SGX Remote Attestation integrated in TLS connection

@@ -13,3 +13,7 @@ rustls = { version = "0.20.8", features = [
 ] }
 log = "0.4.17"
 rcgen = "0.10.0"
+occlum_dcap = { path = "deps/occlum/tools/toolchains/dcap_lib" }
+
+# [features]
+# occlum-dcap = ["occlum_dcap"]

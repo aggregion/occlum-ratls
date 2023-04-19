@@ -616,6 +616,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "occlum_dcap"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "sgx_types",
+]
+
+[[package]]
 name = "oid-registry"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -753,6 +762,7 @@ name = "ratls"
 version = "0.1.0"
 dependencies = [
  "log",
+ "occlum_dcap",
  "rcgen",
  "rustls",
  "x509-parser",
@@ -987,6 +997,10 @@ dependencies = [
  "ryu",
  "serde",
 ]
+
+[[package]]
+name = "sgx_types"
+version = "1.1.5"
 
 [[package]]
 name = "signal-hook-registry"

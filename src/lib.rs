@@ -1,6 +1,7 @@
 pub mod client;
 pub mod server;
 pub mod cert;
+pub mod dcap;
 pub mod error;
 
 use std::sync::Arc;

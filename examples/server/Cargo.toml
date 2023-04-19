@@ -10,13 +10,3 @@ ratls = { path = "../.." }
 actix-web = { version = "4.3.1", features = ["rustls"] }
 env_logger = "0.10.0"
 log = "0.4.17"
-openssl = { version = "0.10", features = ["vendored"] }
-rcgen = "0.10.0"
-rustls = { version = "0.20.8", features = [
-  "dangerous_configuration",
-  "tls12",
-  "logging",
-] }
-serde = { version = "1.0.160", features = ["derive", "serde_derive"] }
-webpki = "0.22.0"
-x509-parser = "0.15.0"

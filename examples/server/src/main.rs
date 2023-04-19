@@ -11,8 +11,7 @@ async fn index() -> String {
 async fn main() -> std::io::Result<()> {
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
 
-    env_logger::builder().filter_level(log::LevelFilter::Trace).build();
-    env_logger::init();
+    env_logger::builder().filter_level(log::LevelFilter::Info).parse_env("LOG_LEVEL").init();
 
     HttpServer::new(|| App::new().service(index))
         .bind_rustls(addr, server_tsl_config())

@@ -32,15 +32,17 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
 
         let subject = x509.subject();
         let issuer = x509.issuer();
+
+        println!("X.509 Subject: {}", subject);
+        println!("X.509 Issuer: {}", issuer);
+        println!("X.509 Extensions: {:#?}", x509.extensions());
+
         let orgs: Vec<String> = subject
             .iter_organization()
             .map(|x| x.attr_value().as_string().unwrap())
             .collect();
 
         println!("{:?}", orgs);
-        println!("X.509 Subject: {}", subject);
-        println!("X.509 Issuer: {}", issuer);
-        println!("X.509 Extensions: {:#?}", x509.extensions());
         if orgs[0] != "Scontain".to_string() {
             warn!("Access denied for client with orgs: {:?}", orgs);
             return Err(Error::InvalidCertificateData("Bad org".to_string()));

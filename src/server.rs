@@ -1,6 +1,6 @@
 use std::{ time::SystemTime, sync::Arc };
-use log::warn;
-use x509_parser::nom::Parser;
+use x509_parser::oid_registry::Oid;
+use x509_parser::{ nom::Parser };
 use x509_parser::prelude::X509CertificateParser;
 
 use rustls::{
@@ -10,7 +10,7 @@ use rustls::{
     DistinguishedNames,
 };
 
-use crate::cert::{ CertificateBuilder, RaTlsCertificateBuilder };
+use crate::cert::{ CertificateBuilder, RaTlsCertificateBuilder, REPORT_OID };
 
 pub struct RaTlsClientCertVerifier {}
 
@@ -29,26 +29,15 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
     ) -> Result<ClientCertVerified, Error> {
         let mut parser = X509CertificateParser::new().with_deep_parse_extensions(true);
         let (_, x509) = parser.parse(&end_entity.as_ref()).unwrap();
+        let report_oid = Oid::from(&REPORT_OID).unwrap();
 
-        let subject = x509.subject();
-        let issuer = x509.issuer();
-
-        println!("X.509 Subject: {}", subject);
-        println!("X.509 Issuer: {}", issuer);
-        println!("X.509 Extensions: {:#?}", x509.extensions());
-
-        let orgs: Vec<String> = subject
-            .iter_organization()
-            .map(|x| x.attr_value().as_string().unwrap())
-            .collect();
-
-        println!("{:?}", orgs);
-        if orgs[0] != "Scontain".to_string() {
-            warn!("Access denied for client with orgs: {:?}", orgs);
-            return Err(Error::InvalidCertificateData("Bad org".to_string()));
+        if let Ok(Some(report)) = x509.get_extension_unique(&report_oid) {
+            println!("Client dcap report: {:?}", report.value);
+            // TODO: validate dcap report
+            Ok(ClientCertVerified::assertion())
+        } else {
+            Err(rustls::Error::General("No report extension".to_string()))
         }
-
-        Ok(ClientCertVerified::assertion())
     }
 
     fn client_auth_root_subjects(&self) -> Option<rustls::DistinguishedNames> {

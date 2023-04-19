@@ -1,19 +1,13 @@
-use std::sync::Arc;
+use std::{ error::Error };
 
 use log::error;
-use rustls::{ Certificate, PrivateKey, sign::RsaSigningKey };
-use openssl::{
-    rsa::Rsa,
-    pkey::{ PKey, Private, Public },
-    x509::{ X509Builder, X509NameBuilder, X509Name },
-    error::ErrorStack,
-    asn1::Asn1Time,
-};
-
+use rustls::{ Certificate, PrivateKey, sign::{ CertifiedKey, any_supported_type } };
 use crate::error::RaTlsError;
 
+use rcgen::{ Certificate as GenCertificate, CertificateParams, DistinguishedName, CustomExtension };
+
 pub trait CertificateBuilder: Send + Sync {
-    fn build(&self) -> Result<rustls::sign::CertifiedKey, RaTlsError>;
+    fn build(&self) -> Result<CertifiedKey, RaTlsError>;
 }
 
 struct RaTlsCertifiedKey {
@@ -31,6 +25,8 @@ impl Default for RaTlsCertificateBuilder {
     }
 }
 
+pub const REPORT_OID: [u64; 5] = [1, 2, 840, 113741, 1];
+
 impl RaTlsCertificateBuilder {
     pub fn new() -> Self {
         Self {
@@ -38,69 +34,48 @@ impl RaTlsCertificateBuilder {
         }
     }
 
-    pub fn with_common_name(&mut self, cn: String) -> &mut Self {
-        self.common_name = cn;
-        self
+    pub fn with_common_name(self, cn: String) -> Self {
+        Self {
+            common_name: cn,
+            ..self
+        }
     }
 
-    // Generate private and public keys by RSA
-    fn get_keys(&self) -> Result<(PKey<Private>, PKey<Public>), ErrorStack> {
-        let rsa = Rsa::generate(2048)?;
+    fn build_internal(&self) -> Result<RaTlsCertifiedKey, Box<dyn Error>> {
+        let mut distinguished_name = DistinguishedName::new();
 
-        let public = PKey::public_key_from_der(&rsa.public_key_to_der()?)?;
-        let private = PKey::private_key_from_der(&rsa.private_key_to_der()?)?;
+        distinguished_name.push(rcgen::DnType::CommonName, self.common_name.clone());
+        distinguished_name.push(rcgen::DnType::CountryName, "US");
+        distinguished_name.push(rcgen::DnType::OrganizationName, "Aggregion");
 
-        return Ok((private, public));
-    }
+        let mut params = CertificateParams::default();
 
-    fn get_x509_name(&self) -> Result<X509Name, ErrorStack> {
-        let mut name_builder = X509NameBuilder::new()?;
-        name_builder.append_entry_by_text("CN", self.common_name.as_str())?;
-        name_builder.append_entry_by_text("C", "US")?;
-        name_builder.append_entry_by_text("O", "Aggregion")?;
-        Ok(name_builder.build())
-    }
+        params.distinguished_name = distinguished_name;
 
-    fn build_internal(&self) -> Result<RaTlsCertifiedKey, ErrorStack> {
-        let (private_key, public_key) = self.get_keys()?;
-        let name = self.get_x509_name()?;
+        // TODO: replace vec![0;500] it with dcap report
+        params.custom_extensions = vec![
+            CustomExtension::from_oid_content(&REPORT_OID, vec![0;500])
+        ];
 
-        let not_before = Asn1Time::days_from_now(0)?;
-        let not_after = Asn1Time::days_from_now(356)?;
+        let crt = GenCertificate::from_params(params)?;
 
-        let mut builder = X509Builder::new()?;
-        builder.set_version(2)?;
-        builder.set_subject_name(&name)?;
-        builder.set_issuer_name(&name)?;
-        builder.set_pubkey(&public_key)?;
-
-        builder.set_not_before(&not_before)?;
-        builder.set_not_after(&not_after)?;
-
-        // let nid = Nid::create("1.2.840.113741.1", "RA-TLS", "RA-TLS Ext")?;
-        // let value = format!("ASN1:UTF8String:{}", "message");
-        // builder.append_extension(X509Extension::new_nid(None, None, nid, &value)?)?;
-
-        builder.sign(&private_key, openssl::hash::MessageDigest::sha256())?;
-
-        let x509 = builder.build();
-
-        Ok(RaTlsCertifiedKey {
-            cert_der: x509.to_der()?,
-            key_der: private_key.private_key_to_der()?,
-        })
+        return Ok(RaTlsCertifiedKey {
+            cert_der: crt.serialize_der()?,
+            key_der: crt.serialize_private_key_der(),
+        });
     }
 }
 
 impl CertificateBuilder for RaTlsCertificateBuilder {
-    fn build(&self) -> Result<rustls::sign::CertifiedKey, RaTlsError> {
+    fn build(&self) -> Result<CertifiedKey, RaTlsError> {
         self.build_internal()
-            .map(|x| {
-                let sign_key = RsaSigningKey::new(&PrivateKey(x.key_der)).unwrap();
-                rustls::sign::CertifiedKey::new(vec![Certificate(x.cert_der)], Arc::new(sign_key))
+            .map(|k| {
+                let sign_key = any_supported_type(&PrivateKey(k.key_der)).unwrap();
+
+                CertifiedKey::new(vec![Certificate(k.cert_der)], sign_key)
             })
             .map_err(|e| {
-                let err = RaTlsError::CertificateBuildError(format!("{}", e));
+                let err = RaTlsError::CertificateBuildError(e.to_string());
                 error!("{}", err);
                 err
             })

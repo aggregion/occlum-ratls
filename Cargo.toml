@@ -7,10 +7,9 @@ edition = "2021"
 
 [dependencies]
 x509-parser = "0.15.0"
-openssl = { version = "0.10", features = ["vendored"] }
 rustls = { version = "0.20.8", features = [
   "dangerous_configuration",
-  "tls12",
   "logging",
 ] }
 log = "0.4.17"
+rcgen = "0.10.0"

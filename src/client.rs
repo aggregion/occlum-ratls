@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use rustls::client::{ ServerCertVerifier, ResolvesClientCert, ServerCertVerified };
-use crate::cert::{ CertificateBuilder, RaTlsCertificateBuilder };
+use rustls::{ client::{ ServerCertVerifier, ResolvesClientCert, ServerCertVerified } };
+use x509_parser::{ prelude::X509CertificateParser, nom::Parser, oid_registry::Oid };
+use crate::cert::{ CertificateBuilder, RaTlsCertificateBuilder, REPORT_OID };
 
 pub struct RaTlsServerCertVerifier {}
 
@@ -21,8 +22,18 @@ impl ServerCertVerifier for RaTlsServerCertVerifier {
         _ocsp_response: &[u8],
         _now: std::time::SystemTime
     ) -> Result<ServerCertVerified, rustls::Error> {
-        println!("server cert: {:#?}", end_entity);
-        Ok(ServerCertVerified::assertion())
+        let mut parser = X509CertificateParser::new().with_deep_parse_extensions(true);
+        let (_, x509) = parser.parse(&end_entity.as_ref()).unwrap();
+
+        let report_oid = Oid::from(&REPORT_OID).unwrap();
+
+        if let Ok(Some(report)) = x509.get_extension_unique(&report_oid) {
+            println!("Server dcap report: {:?}", report.value);
+            // TODO: validate dcap report
+            Ok(ServerCertVerified::assertion())
+        } else {
+            Err(rustls::Error::General("No report extension".to_string()))
+        }
     }
 }
 
@@ -32,7 +43,11 @@ pub struct RaTlsClientCertResolver {
 
 impl Default for RaTlsClientCertResolver {
     fn default() -> Self {
-        Self { cert_builder: Arc::new(RaTlsCertificateBuilder::new()) }
+        Self {
+            cert_builder: Arc::new(
+                RaTlsCertificateBuilder::new().with_common_name("Client".to_string())
+            ),
+        }
     }
 }
 

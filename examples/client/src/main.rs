@@ -3,13 +3,12 @@ use reqwest::ClientBuilder;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    env_logger::builder().filter_level(log::LevelFilter::Info).parse_env("LOG_LEVEL").init();
-
+    env_logger::init();
     let client = ClientBuilder::new().use_preconfigured_tls(client_tls_config()).build()?;
+    let res = client.get("https://127.0.0.1:8000").send().await?;
+    let data = res.text().await?;
 
-    let res = client.get("https://localhost:8000").send().await?;
-
-    println!("{:#?}", res);
+    println!("response: {}", data);
 
     Ok(())
 }

@@ -1,13 +1,14 @@
-pub mod client;
-pub mod server;
 pub mod cert;
+pub mod client;
 pub mod error;
+pub mod server;
+mod utils;
 
 use std::sync::Arc;
 
-use client::{ RaTlsServerCertVerifier, RaTlsClientCertResolver };
-use rustls::{ ServerConfig, ClientConfig };
-use server::{ RaTlsClientCertVerifier, RaTlsServerCertResolver };
+use client::{RaTlsClientCertResolver, RaTlsServerCertVerifier};
+use rustls::{ClientConfig, ServerConfig};
+use server::{RaTlsClientCertVerifier, RaTlsServerCertResolver};
 
 pub fn server_tsl_config() -> ServerConfig {
     ServerConfig::builder()

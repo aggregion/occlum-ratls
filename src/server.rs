@@ -1,16 +1,10 @@
-use std::{ time::SystemTime, sync::Arc };
-use x509_parser::oid_registry::Oid;
-use x509_parser::{ nom::Parser };
-use x509_parser::prelude::X509CertificateParser;
-
 use rustls::{
-    server::{ ClientCertVerifier, ClientCertVerified, ResolvesServerCert },
-    Certificate,
-    Error,
-    DistinguishedNames,
+    server::{ClientCertVerified, ClientCertVerifier, ResolvesServerCert},
+    Certificate, DistinguishedNames, Error,
 };
+use std::{sync::Arc, time::SystemTime};
 
-use crate::cert::{ CertificateBuilder, RaTlsCertificateBuilder, REPORT_OID };
+use crate::cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder};
 
 pub struct RaTlsClientCertVerifier {}
 
@@ -25,19 +19,15 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
         &self,
         end_entity: &Certificate,
         _intermediates: &[Certificate],
-        _now: SystemTime
+        _now: SystemTime,
     ) -> Result<ClientCertVerified, Error> {
-        let mut parser = X509CertificateParser::new().with_deep_parse_extensions(true);
-        let (_, x509) = parser.parse(&end_entity.as_ref()).unwrap();
-        let report_oid = Oid::from(&REPORT_OID).unwrap();
+        let quote = end_entity.get_quote()?;
 
-        if let Ok(Some(report)) = x509.get_extension_unique(&report_oid) {
-            println!("Client dcap report: {:?}", report.value);
-            // TODO: validate dcap report
-            Ok(ClientCertVerified::assertion())
-        } else {
-            Err(rustls::Error::General("No report extension".to_string()))
-        }
+        quote
+            .verify()
+            .map_err(|e| rustls::Error::General(e.to_string()))?;
+
+        Ok(ClientCertVerified::assertion())
     }
 
     fn client_auth_root_subjects(&self) -> Option<rustls::DistinguishedNames> {
@@ -46,12 +36,14 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
 }
 
 pub struct RaTlsServerCertResolver {
-    cert_builder: Arc<dyn CertificateBuilder>,
+    cert: Option<std::sync::Arc<rustls::sign::CertifiedKey>>,
 }
 
 impl Default for RaTlsServerCertResolver {
     fn default() -> Self {
-        Self { cert_builder: Arc::new(RaTlsCertificateBuilder::new()) }
+        let builder = RaTlsCertificateBuilder::new().with_common_name("Client".to_string());
+        let cert = builder.build().ok().map(|x| Arc::new(x));
+        Self { cert }
     }
 }
 
@@ -61,23 +53,13 @@ impl RaTlsServerCertResolver {
             ..Default::default()
         }
     }
-
-    pub fn with_cert_builder(self, cb: Arc<dyn CertificateBuilder>) -> Self {
-        Self {
-            cert_builder: cb,
-            ..self
-        }
-    }
 }
 
 impl ResolvesServerCert for RaTlsServerCertResolver {
     fn resolve(
         &self,
-        _client_hello: rustls::server::ClientHello
+        _client_hello: rustls::server::ClientHello,
     ) -> Option<std::sync::Arc<rustls::sign::CertifiedKey>> {
-        self.cert_builder
-            .build()
-            .ok()
-            .map(|x| Arc::new(x))
+        self.cert.clone()
     }
 }

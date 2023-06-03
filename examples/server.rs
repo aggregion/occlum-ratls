@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
-use actix_web::{ HttpServer, App, get };
-use ratls::server_tsl_config;
+use actix_web::{get, App, HttpServer};
+use occlum_ratls::server_tsl_config;
 
 #[get("/")]
 async fn index() -> String {
@@ -16,5 +16,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(index))
         .bind_rustls(addr, server_tsl_config())
         .unwrap()
-        .run().await
+        .run()
+        .await
 }

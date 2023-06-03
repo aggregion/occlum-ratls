@@ -1,7 +1,11 @@
 [package]
-name = "ratls"
+name = "occlum-ratls"
 version = "0.1.0"
 edition = "2021"
+authors = ["Ivan Chirkin <chirkin.ivan@gmail.com>"]
+description = "Lib for build ratls connection between Occlum instances"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/aggregion/occlum-ratls"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,3 +17,12 @@ rustls = { version = "0.20.8", features = [
 ] }
 log = "0.4.17"
 rcgen = "0.10.0"
+occlum-sgx = "0.1.6"
+ring = "0.16.20"
+
+[dev-dependencies]
+actix-web = { version = "4.3.1", features = ["rustls"] }
+env_logger = "0.10.0"
+log = "0.4.17"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11.16", features = ["__rustls"] }

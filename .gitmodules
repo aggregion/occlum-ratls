@@ -1,0 +1,3 @@
+[submodule "deps/occlum"]
+	path = deps/occlum
+	url = git@github.com:occlum/occlum.git

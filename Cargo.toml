@@ -1,5 +1,5 @@
 [package]
-name = "ratls"
+name = "occlum-ratls"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,7 +13,12 @@ rustls = { version = "0.20.8", features = [
 ] }
 log = "0.4.17"
 rcgen = "0.10.0"
-occlum_dcap = { path = "deps/occlum/tools/toolchains/dcap_lib" }
+occlum-sgx = "0.1.6"
+ring = "0.16.20"
 
-# [features]
-# occlum-dcap = ["occlum_dcap"]
+[dev-dependencies]
+actix-web = { version = "4.3.1", features = ["rustls"] }
+env_logger = "0.10.0"
+log = "0.4.17"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11.16", features = ["__rustls"] }

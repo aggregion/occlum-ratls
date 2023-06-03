@@ -1,10 +1,17 @@
-use std::{ error::Error };
+use std::error::Error;
 
+use crate::{error::RaTlsError, utils::hash_sha512};
 use log::error;
-use rustls::{ Certificate, PrivateKey, sign::{ CertifiedKey, any_supported_type } };
-use crate::error::RaTlsError;
+use occlum_sgx::SGXQuote;
+use rustls::{
+    sign::{any_supported_type, CertifiedKey},
+    Certificate, PrivateKey,
+};
 
-use rcgen::{ Certificate as GenCertificate, CertificateParams, DistinguishedName, CustomExtension };
+use rcgen::{
+    Certificate as GenCertificate, CertificateParams, CustomExtension, DistinguishedName, KeyPair,
+};
+use x509_parser::{nom::Parser, oid_registry::Oid, prelude::X509CertificateParser};
 
 pub trait CertificateBuilder: Send + Sync {
     fn build(&self) -> Result<CertifiedKey, RaTlsError>;
@@ -21,7 +28,9 @@ pub struct RaTlsCertificateBuilder {
 
 impl Default for RaTlsCertificateBuilder {
     fn default() -> Self {
-        Self { common_name: "RATLS".to_string() }
+        Self {
+            common_name: "RATLS".to_string(),
+        }
     }
 }
 
@@ -49,13 +58,19 @@ impl RaTlsCertificateBuilder {
         distinguished_name.push(rcgen::DnType::OrganizationName, "Aggregion");
 
         let mut params = CertificateParams::default();
+        let key_pair = KeyPair::generate(&params.alg)?;
+        let public_key = key_pair.public_key_raw().to_vec();
 
+        params.key_pair = Some(key_pair);
         params.distinguished_name = distinguished_name;
 
-        // TODO: replace vec![0;500] it with dcap report
-        params.custom_extensions = vec![
-            CustomExtension::from_oid_content(&REPORT_OID, vec![0;500])
-        ];
+        let report_data = hash_sha512(public_key);
+        let quote = SGXQuote::from_report_data(&report_data)?;
+
+        params.custom_extensions = vec![CustomExtension::from_oid_content(
+            &REPORT_OID,
+            quote.as_slice().to_vec(),
+        )];
 
         let crt = GenCertificate::from_params(params)?;
 
@@ -79,5 +94,29 @@ impl CertificateBuilder for RaTlsCertificateBuilder {
                 error!("{}", err);
                 err
             })
+    }
+}
+
+pub trait RaTlsCertificate {
+    fn get_quote(&self) -> Result<SGXQuote, rustls::Error>;
+}
+
+impl RaTlsCertificate for rustls::Certificate {
+    fn get_quote(&self) -> Result<SGXQuote, rustls::Error> {
+        let mut parser = X509CertificateParser::new().with_deep_parse_extensions(true);
+        let (_, x509) = parser.parse(&self.as_ref()).unwrap();
+
+        let report_oid = Oid::from(&REPORT_OID).unwrap();
+
+        if let Ok(Some(report)) = x509.get_extension_unique(&report_oid) {
+            Ok(TryInto::<SGXQuote>::try_into(report.value).map_err(|e| {
+                rustls::Error::General(format!(
+                    "Fail to get SGX Quote from certificate: {}",
+                    e.to_string()
+                ))
+            })?)
+        } else {
+            Err(rustls::Error::General("No report extension".to_string()))
+        }
     }
 }

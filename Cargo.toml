@@ -25,3 +25,8 @@ actix-web = { version = "4.3.1", features = ["rustls"] }
 env_logger = "0.10.0"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11.16", features = ["__rustls"] }
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]

@@ -44,10 +44,7 @@ impl RaTlsCertificateBuilder {
     }
 
     pub fn with_common_name(self, cn: String) -> Self {
-        Self {
-            common_name: cn,
-            ..self
-        }
+        Self { common_name: cn }
     }
 
     fn build_internal(&self) -> Result<RaTlsCertifiedKey, Box<dyn Error>> {
@@ -58,7 +55,7 @@ impl RaTlsCertificateBuilder {
         distinguished_name.push(rcgen::DnType::OrganizationName, "Aggregion");
 
         let mut params = CertificateParams::default();
-        let key_pair = KeyPair::generate(&params.alg)?;
+        let key_pair = KeyPair::generate(params.alg)?;
         let public_key = key_pair.public_key_raw().to_vec();
 
         params.key_pair = Some(key_pair);
@@ -74,10 +71,10 @@ impl RaTlsCertificateBuilder {
 
         let crt = GenCertificate::from_params(params)?;
 
-        return Ok(RaTlsCertifiedKey {
+        Ok(RaTlsCertifiedKey {
             cert_der: crt.serialize_der()?,
             key_der: crt.serialize_private_key_der(),
-        });
+        })
     }
 }
 
@@ -104,7 +101,7 @@ pub trait RaTlsCertificate {
 impl RaTlsCertificate for rustls::Certificate {
     fn verify_quote(&self, config: &RaTlsConfig) -> Result<(), Box<dyn Error>> {
         let mut parser = X509CertificateParser::new().with_deep_parse_extensions(true);
-        let (_, x509) = parser.parse(&self.as_ref()).unwrap();
+        let (_, x509) = parser.parse(self.as_ref()).unwrap();
 
         let report_oid = Oid::from(&REPORT_OID).unwrap();
 

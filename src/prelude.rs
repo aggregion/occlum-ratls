@@ -8,6 +8,7 @@ use rustls::{ClientConfig, ServerConfig};
 
 pub use occlum_sgx::SGXMeasurement;
 
+#[derive(Default)]
 pub struct RaTlsConfig {
     pub(crate) mrsigner: Option<SGXMeasurement>,
     pub(crate) mrenclave: Option<SGXMeasurement>,
@@ -17,12 +18,7 @@ pub struct RaTlsConfig {
 
 impl RaTlsConfig {
     pub fn new() -> Self {
-        Self {
-            mrsigner: None,
-            mrenclave: None,
-            product_id: None,
-            version: None,
-        }
+        Self::default()
     }
 
     pub fn with_mrsigner(self, mrsigner: SGXMeasurement) -> Self {

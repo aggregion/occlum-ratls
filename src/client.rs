@@ -41,7 +41,7 @@ pub struct RaTlsClientCertResolver {
 impl Default for RaTlsClientCertResolver {
     fn default() -> Self {
         let builder = RaTlsCertificateBuilder::new().with_common_name("Client".to_string());
-        let cert = builder.build().ok().map(|x| Arc::new(x));
+        let cert = builder.build().ok().map(Arc::new);
         Self { cert }
     }
 }

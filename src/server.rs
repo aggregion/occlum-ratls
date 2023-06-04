@@ -1,12 +1,13 @@
 use rustls::{
     server::{ClientCertVerified, ClientCertVerifier, ResolvesServerCert},
-    Certificate, DistinguishedNames, Error,
+    Certificate, DistinguishedNames, Error, ServerConfig,
 };
 use std::{sync::Arc, time::SystemTime};
 
 use crate::{
     cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
     prelude::RaTlsConfig,
+    RaTlsConfigBuilder,
 };
 
 pub struct RaTlsClientCertVerifier {
@@ -64,5 +65,14 @@ impl ResolvesServerCert for RaTlsServerCertResolver {
         _client_hello: rustls::server::ClientHello,
     ) -> Option<std::sync::Arc<rustls::sign::CertifiedKey>> {
         self.cert.clone()
+    }
+}
+
+impl RaTlsConfigBuilder<ServerConfig> for ServerConfig {
+    fn from_ratls_config(config: RaTlsConfig) -> Self {
+        Self::builder()
+            .with_safe_defaults()
+            .with_client_cert_verifier(Arc::new(RaTlsClientCertVerifier::new(config)))
+            .with_cert_resolver(Arc::new(RaTlsServerCertResolver::new()))
     }
 }

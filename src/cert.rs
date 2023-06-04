@@ -11,7 +11,7 @@ use rustls::{
 use rcgen::{
     Certificate as GenCertificate, CertificateParams, CustomExtension, DistinguishedName, KeyPair,
 };
-use x509_parser::{nom::Parser, oid_registry::Oid, prelude::X509CertificateParser};
+use x509_parser::{nom::Parser, oid_registry::Oid, prelude::X509CertificateParser, public_key};
 
 pub trait CertificateBuilder: Send + Sync {
     fn build(&self) -> Result<CertifiedKey, RaTlsError>;
@@ -106,10 +106,15 @@ impl RaTlsCertificate for rustls::Certificate {
         let report_oid = Oid::from(&REPORT_OID).unwrap();
 
         if let Ok(Some(report)) = x509.get_extension_unique(&report_oid) {
-            let public_key = x509.public_key().raw.to_vec();
             let quote = SGXQuote::from_slice(report.value)?;
 
             quote.verify()?;
+
+            let public_key = x509.public_key().parsed()?;
+            let public_key = match public_key {
+                public_key::PublicKey::EC(key) => key.data().to_vec(),
+                _ => return Err("Unexpected public key type".into()),
+            };
 
             let report_data = &*quote.report_data();
 

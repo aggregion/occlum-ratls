@@ -3,8 +3,12 @@ use std::sync::Arc;
 use crate::{
     cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
     prelude::RaTlsConfig,
+    RaTlsConfigBuilder,
 };
-use rustls::client::{ResolvesClientCert, ServerCertVerified, ServerCertVerifier};
+use rustls::{
+    client::{ResolvesClientCert, ServerCertVerified, ServerCertVerifier},
+    ClientConfig,
+};
 
 pub struct RaTlsServerCertVerifier {
     config: RaTlsConfig,
@@ -65,5 +69,14 @@ impl ResolvesClientCert for RaTlsClientCertResolver {
 
     fn has_certs(&self) -> bool {
         true
+    }
+}
+
+impl RaTlsConfigBuilder<ClientConfig> for ClientConfig {
+    fn from_ratls_config(config: RaTlsConfig) -> Self {
+        Self::builder()
+            .with_safe_defaults()
+            .with_custom_certificate_verifier(Arc::new(RaTlsServerCertVerifier::new(config)))
+            .with_client_cert_resolver(Arc::new(RaTlsClientCertResolver::new()))
     }
 }

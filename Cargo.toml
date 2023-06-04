@@ -1,6 +1,6 @@
 [package]
 name = "occlum-ratls"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Ivan Chirkin <chirkin.ivan@gmail.com>"]
 description = "Lib for build ratls connection between Occlum instances"
@@ -23,6 +23,5 @@ ring = "0.16.20"
 [dev-dependencies]
 actix-web = { version = "4.3.1", features = ["rustls"] }
 env_logger = "0.10.0"
-log = "0.4.17"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11.16", features = ["__rustls"] }

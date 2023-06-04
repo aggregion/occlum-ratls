@@ -1,13 +1,18 @@
 use std::sync::Arc;
 
-use crate::cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder};
+use crate::{
+    cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
+    prelude::RaTlsConfig,
+};
 use rustls::client::{ResolvesClientCert, ServerCertVerified, ServerCertVerifier};
 
-pub struct RaTlsServerCertVerifier {}
+pub struct RaTlsServerCertVerifier {
+    config: RaTlsConfig,
+}
 
 impl RaTlsServerCertVerifier {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(config: RaTlsConfig) -> Self {
+        Self { config }
     }
 }
 
@@ -21,10 +26,8 @@ impl ServerCertVerifier for RaTlsServerCertVerifier {
         _ocsp_response: &[u8],
         _now: std::time::SystemTime,
     ) -> Result<ServerCertVerified, rustls::Error> {
-        let quote = end_entity.get_quote()?;
-
-        quote
-            .verify()
+        end_entity
+            .verify_quote(&self.config)
             .map_err(|e| rustls::Error::General(e.to_string()))?;
 
         Ok(ServerCertVerified::assertion())

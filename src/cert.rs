@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{error::RaTlsError, utils::hash_sha512};
+use crate::{error::RaTlsError, prelude::RaTlsConfig, utils::hash_sha512};
 use log::error;
 use occlum_sgx::SGXQuote;
 use rustls::{
@@ -98,25 +98,33 @@ impl CertificateBuilder for RaTlsCertificateBuilder {
 }
 
 pub trait RaTlsCertificate {
-    fn get_quote(&self) -> Result<SGXQuote, rustls::Error>;
+    fn verify_quote(&self, config: &RaTlsConfig) -> Result<(), Box<dyn Error>>;
 }
 
 impl RaTlsCertificate for rustls::Certificate {
-    fn get_quote(&self) -> Result<SGXQuote, rustls::Error> {
+    fn verify_quote(&self, config: &RaTlsConfig) -> Result<(), Box<dyn Error>> {
         let mut parser = X509CertificateParser::new().with_deep_parse_extensions(true);
         let (_, x509) = parser.parse(&self.as_ref()).unwrap();
 
         let report_oid = Oid::from(&REPORT_OID).unwrap();
 
         if let Ok(Some(report)) = x509.get_extension_unique(&report_oid) {
-            Ok(TryInto::<SGXQuote>::try_into(report.value).map_err(|e| {
-                rustls::Error::General(format!(
-                    "Fail to get SGX Quote from certificate: {}",
-                    e.to_string()
-                ))
-            })?)
+            let public_key = x509.public_key().raw.to_vec();
+            let quote = SGXQuote::from_slice(report.value)?;
+
+            quote.verify()?;
+
+            let report_data = &*quote.report_data();
+
+            if hash_sha512(public_key) != report_data {
+                return Err("Invalid quote report".into());
+            }
+
+            config.verify_quote(&quote)?;
+
+            Ok(())
         } else {
-            Err(rustls::Error::General("No report extension".to_string()))
+            Err("No report extension".into())
         }
     }
 }

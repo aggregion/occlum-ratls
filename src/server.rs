@@ -4,13 +4,18 @@ use rustls::{
 };
 use std::{sync::Arc, time::SystemTime};
 
-use crate::cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder};
+use crate::{
+    cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
+    prelude::RaTlsConfig,
+};
 
-pub struct RaTlsClientCertVerifier {}
+pub struct RaTlsClientCertVerifier {
+    config: RaTlsConfig,
+}
 
 impl RaTlsClientCertVerifier {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(config: RaTlsConfig) -> Self {
+        Self { config }
     }
 }
 
@@ -21,10 +26,8 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
         _intermediates: &[Certificate],
         _now: SystemTime,
     ) -> Result<ClientCertVerified, Error> {
-        let quote = end_entity.get_quote()?;
-
-        quote
-            .verify()
+        end_entity
+            .verify_quote(&self.config)
             .map_err(|e| rustls::Error::General(e.to_string()))?;
 
         Ok(ClientCertVerified::assertion())

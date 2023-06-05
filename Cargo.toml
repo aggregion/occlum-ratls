@@ -1,11 +1,12 @@
 [package]
 name = "occlum-ratls"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Ivan Chirkin <chirkin.ivan@gmail.com>"]
-description = "Lib for build ratls connection between Occlum instances"
+description = "Lib for remote attestation between occlum instances"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/aggregion/occlum-ratls"
+keywords = ["occlum", "rustls", "ratls", "remote attestation"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -52,7 +53,7 @@ default-features = false
 features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
 
 [features]
-default = ["reqwest", "actix-web"]
+default = []
 reqwest = ["dep:reqwest"]
 actix-web = ["dep:actix-web", "actix-service", "actix-http"]
 

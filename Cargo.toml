@@ -18,7 +18,7 @@ rustls = { version = "0.20.8", features = [
 ] }
 log = "0.4.17"
 rcgen = "0.10.0"
-occlum-sgx = "0.1.11"
+occlum-sgx = "^0.1.12"
 ring = "0.16.20"
 
 [dependencies.actix-web]

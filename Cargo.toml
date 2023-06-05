@@ -6,7 +6,7 @@ authors = ["Ivan Chirkin <chirkin.ivan@gmail.com>"]
 description = "Lib for remote attestation between occlum instances"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/aggregion/occlum-ratls"
-keywords = ["occlum", "rustls", "ratls", "remote attestation"]
+keywords = ["occlum", "rustls", "ratls"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

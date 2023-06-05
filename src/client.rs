@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
-    prelude::RaTlsConfig,
-    RaTlsConfigBuilder,
+    RaTlsConfig, RaTlsConfigBuilder,
 };
 use rustls::{
     client::{ResolvesClientCert, ServerCertVerified, ServerCertVerifier},

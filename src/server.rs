@@ -6,8 +6,7 @@ use std::{sync::Arc, time::SystemTime};
 
 use crate::{
     cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
-    prelude::RaTlsConfig,
-    RaTlsConfigBuilder,
+    RaTlsConfig, RaTlsConfigBuilder,
 };
 
 pub struct RaTlsClientCertVerifier {

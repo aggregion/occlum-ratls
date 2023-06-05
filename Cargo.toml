@@ -1,6 +1,6 @@
 [package]
 name = "occlum-ratls"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 authors = ["Ivan Chirkin <chirkin.ivan@gmail.com>"]
 description = "Lib for build ratls connection between Occlum instances"
@@ -20,13 +20,47 @@ rcgen = "0.10.0"
 occlum-sgx = "0.1.11"
 ring = "0.16.20"
 
-[dev-dependencies]
-actix-web = { version = "4.3.1", features = ["rustls"] }
-env_logger = "0.10.0"
-tokio = { version = "1", features = ["full"] }
-reqwest = { version = "=0.11.16", features = ["__rustls"] }
+[dependencies.actix-web]
+version = "4.3.1"
+features = ["rustls"]
+optional = true
+
+[dependencies.actix-http]
+version = "3.3"
+features = ["http2", "ws"]
+optional = true
+
+[dependencies.actix-service]
+version = "2"
+optional = true
+
+[dependencies.reqwest]
+version = "=0.11.16"
+features = ["__rustls"]
+optional = true
+
+[dev-dependencies.env_logger]
+version = "0.10.0"
+
+[dev-dependencies.tokio]
+version = "1"
+features = ["full"]
 
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false
 features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
+
+[features]
+default = ["reqwest", "actix-web"]
+reqwest = ["dep:reqwest"]
+actix-web = ["dep:actix-web", "actix-service", "actix-http"]
+
+
+[[example]]
+name = "server"
+required-features = ["actix-web"]
+
+[[example]]
+name = "client"
+required-features = ["reqwest"]

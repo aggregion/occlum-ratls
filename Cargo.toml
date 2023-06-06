@@ -1,6 +1,6 @@
 [package]
 name = "occlum-ratls"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = ["Ivan Chirkin <chirkin.ivan@gmail.com>"]
 description = "Lib for remote attestation between occlum instances"

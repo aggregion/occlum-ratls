@@ -1,4 +1,5 @@
-use occlum_ratls::{prelude::*, reqwest::ClientBuilder};
+use occlum_ratls::prelude::*;
+use reqwest::ClientBuilder;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

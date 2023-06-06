@@ -1,12 +1,10 @@
-use occlum_ratls::{
-    actix_web::{get, App, HttpServer},
-    prelude::*,
-};
+use actix_web::{get, App, HttpServer};
+use occlum_ratls::prelude::*;
 use std::net::SocketAddr;
 
 #[get("/")]
 async fn index() -> String {
-    format!("Hello world!") // <- response with app_name
+    format!("Hello world!")
 }
 
 #[actix_web::main]

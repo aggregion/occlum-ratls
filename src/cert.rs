@@ -119,14 +119,14 @@ impl RaTlsCertificate for rustls::Certificate {
             let report_data = &*quote.report_data();
 
             if hash_sha512(public_key) != report_data {
-                return Err("Invalid quote report".into());
+                return Err("Invalid quote report data".into());
             }
 
             config.verify_quote(&quote)?;
 
             Ok(())
         } else {
-            Err("No report extension".into())
+            Err("Not found quote extension".into())
         }
     }
 }

@@ -1,3 +1,4 @@
+use reqwest::ClientBuilder;
 use rustls::ClientConfig;
 
 use crate::{RaTlsConfig, RaTlsConfigBuilder};
@@ -11,5 +12,3 @@ impl ReqwestUseRatls for ClientBuilder {
         self.use_preconfigured_tls(ClientConfig::from_ratls_config(config))
     }
 }
-
-pub use reqwest::*;

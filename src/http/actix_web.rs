@@ -3,7 +3,7 @@ use std::net;
 use actix_http::{body::MessageBody, Request};
 use actix_service::{IntoServiceFactory, ServiceFactory};
 use actix_web::dev::{AppConfig, Response};
-pub use actix_web::*;
+use actix_web::*;
 use rustls::ServerConfig;
 
 use crate::{config::RaTlsConfig, RaTlsConfigBuilder};

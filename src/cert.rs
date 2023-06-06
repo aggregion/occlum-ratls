@@ -122,7 +122,7 @@ impl RaTlsCertificate for rustls::Certificate {
                 return Err("Invalid quote report data".into());
             }
 
-            config.verify_quote(&quote)?;
+            config.is_allowed_quote(&quote)?;
 
             Ok(())
         } else {

@@ -14,12 +14,18 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(index))
         .bind_ratls(
             SocketAddr::from(([127, 0, 0, 1], 8000)),
-            RaTlsConfig::new().with_mrsigner(
-                SGXMeasurement::from_hex(
-                    "e10eb055074ac2e47c9427c1a13e3129ba344ea1554c37cea8085a9295dcf288",
+            RaTlsConfig::new()
+                .allow_instance_measurement(
+                    InstanceMeasurement::new().with_mrsigners(vec![SGXMeasurement::new([0u8; 32])]),
                 )
-                .unwrap(),
-            ),
+                .allow_instance_measurement(
+                    InstanceMeasurement::new()
+                        .with_mrenclaves(vec![
+                            SGXMeasurement::new([0u8; 32]),
+                            SGXMeasurement::new([1u8; 32]),
+                        ])
+                        .with_product_ids(vec![2]),
+                ),
         )
         .unwrap()
         .run()

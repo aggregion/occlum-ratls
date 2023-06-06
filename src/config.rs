@@ -5,10 +5,85 @@ pub use occlum_sgx::SGXMeasurement;
 
 #[derive(Default)]
 pub struct RaTlsConfig {
-    pub(crate) mrsigner: Option<SGXMeasurement>,
-    pub(crate) mrenclave: Option<SGXMeasurement>,
-    pub(crate) product_id: Option<u16>,
-    pub(crate) version: Option<u16>,
+    pub(crate) allowed_instances: Vec<InstanceMeasurement>,
+}
+
+#[derive(Default, Clone)]
+pub struct InstanceMeasurement {
+    pub(crate) mrsigners: Option<Vec<SGXMeasurement>>,
+    pub(crate) mrenclaves: Option<Vec<SGXMeasurement>>,
+    pub(crate) product_ids: Option<Vec<u16>>,
+    pub(crate) versions: Option<Vec<u16>>,
+}
+
+impl InstanceMeasurement {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_mrsigners(self, mrsigners: Vec<SGXMeasurement>) -> Self {
+        Self {
+            mrsigners: Some(mrsigners),
+            ..self
+        }
+    }
+
+    pub fn with_mrenclaves(self, mrenclaves: Vec<SGXMeasurement>) -> Self {
+        Self {
+            mrenclaves: Some(mrenclaves),
+            ..self
+        }
+    }
+
+    pub fn with_product_ids(self, product_ids: Vec<u16>) -> Self {
+        Self {
+            product_ids: Some(product_ids),
+            ..self
+        }
+    }
+
+    pub fn with_versions(self, versions: Vec<u16>) -> Self {
+        Self {
+            versions: Some(versions),
+            ..self
+        }
+    }
+
+    pub(crate) fn check_quote_measurements(&self, quote: &SGXQuote) -> bool {
+        let mut result = false;
+        if let Some(mrsigners) = &self.mrsigners {
+            result = true;
+            let value = quote.mrsigner();
+            if !mrsigners.contains(&value) {
+                return false;
+            }
+        }
+        if let Some(mrenclaves) = &self.mrenclaves {
+            result = true;
+            let value = quote.mrenclave();
+            if !mrenclaves.contains(&value) {
+                return false;
+            }
+        }
+
+        if let Some(product_ids) = &self.product_ids {
+            result = true;
+            let value = quote.product_id();
+            if !product_ids.contains(&value) {
+                return false;
+            }
+        }
+
+        if let Some(versions) = &self.versions {
+            result = true;
+            let value = quote.version();
+            if !versions.contains(&value) {
+                return false;
+            }
+        }
+
+        result
+    }
 }
 
 impl RaTlsConfig {
@@ -16,74 +91,22 @@ impl RaTlsConfig {
         Self::default()
     }
 
-    pub fn with_mrsigner(self, mrsigner: SGXMeasurement) -> Self {
-        Self {
-            mrsigner: Some(mrsigner),
-            ..self
-        }
+    pub fn allow_instance_measurement(mut self, instance_measurement: InstanceMeasurement) -> Self {
+        self.allowed_instances.push(instance_measurement);
+        self
     }
 
-    pub fn with_mrenclave(self, mrenclave: SGXMeasurement) -> Self {
-        Self {
-            mrenclave: Some(mrenclave),
-            ..self
+    pub(crate) fn is_allowed_quote(&self, quote: &SGXQuote) -> Result<(), RaTlsError> {
+        match self
+            .allowed_instances
+            .iter()
+            .any(|im| im.check_quote_measurements(quote))
+        {
+            true => Ok(()),
+            false => Err(RaTlsError::QuoteVerifyError(format!(
+                "{:?} is not allowed",
+                quote
+            ))),
         }
-    }
-
-    pub fn with_product_id(self, product_id: u16) -> Self {
-        Self {
-            product_id: Some(product_id),
-            ..self
-        }
-    }
-
-    pub fn with_version(self, version: u16) -> Self {
-        Self {
-            version: Some(version),
-            ..self
-        }
-    }
-
-    pub(crate) fn verify_quote(&self, quote: &SGXQuote) -> Result<(), RaTlsError> {
-        if let Some(mrsigner) = &self.mrsigner {
-            let value = quote.mrsigner();
-            if value != *mrsigner {
-                return Err(RaTlsError::QuoteVerifyError(format!(
-                    "MRSigner mismatch: {} != {}",
-                    value, mrsigner
-                )));
-            }
-        }
-        if let Some(mrenclave) = &self.mrenclave {
-            let value = quote.mrenclave();
-            if value != *mrenclave {
-                return Err(RaTlsError::QuoteVerifyError(format!(
-                    "MREnclave mismatch: {} != {}",
-                    value, mrenclave
-                )));
-            }
-        }
-
-        if let Some(product_id) = &self.product_id {
-            let value = quote.product_id();
-            if value != *product_id {
-                return Err(RaTlsError::QuoteVerifyError(format!(
-                    "ProductId mismatch: {} != {}",
-                    value, product_id
-                )));
-            }
-        }
-
-        if let Some(version) = &self.version {
-            let value = quote.version();
-            if value != *version {
-                return Err(RaTlsError::QuoteVerifyError(format!(
-                    "Version mismatch: {} != {}",
-                    value, version
-                )));
-            }
-        }
-
-        Ok(())
     }
 }

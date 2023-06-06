@@ -8,7 +8,7 @@ mod utils;
 
 pub mod prelude;
 
-pub use crate::config::RaTlsConfig;
+pub use crate::config::{InstanceMeasurement, RaTlsConfig};
 pub use crate::error::RaTlsError;
 pub use occlum_sgx::SGXMeasurement;
 

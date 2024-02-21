@@ -54,6 +54,8 @@ features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
 
 [features]
 default = []
+debug = []
+occlum = []
 reqwest = ["dep:reqwest"]
 actix-web = ["dep:actix-web", "actix-service", "actix-http"]
 

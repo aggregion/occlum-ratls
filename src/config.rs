@@ -1,7 +1,8 @@
-use crate::error::RaTlsError;
+use crate::{error::RaTlsError, RaTlsConfigBuilder};
 use occlum_sgx::SGXQuote;
 
 pub use occlum_sgx::SGXMeasurement;
+use rustls::{ClientConfig, ServerConfig};
 
 #[derive(Default)]
 pub struct RaTlsConfig {
@@ -108,5 +109,13 @@ impl RaTlsConfig {
                 quote
             ))),
         }
+    }
+
+    pub fn into_server_config(self) -> ServerConfig {
+        ServerConfig::from_ratls_config(self)
+    }
+
+    pub fn into_client_config(self) -> ClientConfig {
+        ClientConfig::from_ratls_config(self)
     }
 }

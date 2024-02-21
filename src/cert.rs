@@ -57,25 +57,12 @@ impl RaTlsCertificateBuilder {
         let mut params = CertificateParams::default();
         let key_pair = KeyPair::generate(params.alg)?;
 
-        #[cfg(feature = "occlum")]
-        let public_key = key_pair.public_key_raw().to_vec();
+        let quote = self.get_quote(&key_pair)?;
 
         params.key_pair = Some(key_pair);
         params.distinguished_name = distinguished_name;
 
-        #[cfg(feature = "occlum")]
-        let report_data = hash_sha512(public_key);
-
-        #[cfg(feature = "occlum")]
-        let quote = SGXQuote::from_report_data(&report_data)?.as_slice();
-
-        #[cfg(not(feature = "occlum"))]
-        let quote = [0u8; 32];
-
-        params.custom_extensions = vec![CustomExtension::from_oid_content(
-            &REPORT_OID,
-            quote.to_vec(),
-        )];
+        params.custom_extensions = vec![CustomExtension::from_oid_content(&REPORT_OID, quote)];
 
         let crt = GenCertificate::from_params(params)?;
 
@@ -83,6 +70,20 @@ impl RaTlsCertificateBuilder {
             cert_der: crt.serialize_der()?,
             key_der: crt.serialize_private_key_der(),
         })
+    }
+
+    #[cfg(not(feature = "occlum"))]
+    fn get_quote(&self, _: &KeyPair) -> Result<Vec<u8>, Box<dyn Error>> {
+        Ok([0u8; 32].to_vec())
+    }
+
+    #[cfg(feature = "occlum")]
+    fn get_quote(&self, key_pair: &KeyPair) -> Result<Vec<u8>, Box<dyn Error>> {
+        let public_key = key_pair.public_key_raw().to_vec();
+        let report_data = hash_sha512(public_key);
+        let quote = SGXQuote::from_report_data(&report_data)?;
+
+        Ok(quote.as_slice().to_vec())
     }
 }
 

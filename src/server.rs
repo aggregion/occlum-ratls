@@ -1,6 +1,6 @@
 use rustls::{
     server::{ClientCertVerified, ClientCertVerifier, ResolvesServerCert},
-    Certificate, DistinguishedNames, Error, ServerConfig,
+    Certificate, DistinguishedName, Error, ServerConfig,
 };
 use std::{sync::Arc, time::SystemTime};
 
@@ -33,8 +33,8 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
         Ok(ClientCertVerified::assertion())
     }
 
-    fn client_auth_root_subjects(&self) -> Option<rustls::DistinguishedNames> {
-        Some(DistinguishedNames::new())
+    fn client_auth_root_subjects(&self) -> &[DistinguishedName] {
+        &[]
     }
 }
 

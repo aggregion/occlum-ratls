@@ -4,11 +4,16 @@ mod config;
 mod error;
 mod http;
 mod server;
+#[cfg(feature = "occlum")]
 mod utils;
 
 pub mod prelude;
 
-pub use crate::config::{InstanceMeasurement, RaTlsConfig};
+pub use crate::config::RaTlsConfig;
+
+#[cfg(feature = "occlum")]
+pub use crate::config::InstanceMeasurement;
+
 pub use crate::error::RaTlsError;
 pub use occlum_sgx::SGXMeasurement;
 

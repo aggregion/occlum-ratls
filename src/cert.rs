@@ -1,7 +1,11 @@
 use std::error::Error;
 
-use crate::{error::RaTlsError, utils::hash_sha512, RaTlsConfig};
+#[cfg(feature = "occlum")]
+use crate::utils::hash_sha512;
+use crate::{error::RaTlsError, RaTlsConfig};
 use log::error;
+
+#[cfg(feature = "occlum")]
 use occlum_sgx::SGXQuote;
 use rustls::{
     sign::{any_supported_type, CertifiedKey},
@@ -11,6 +15,8 @@ use rustls::{
 use rcgen::{
     Certificate as GenCertificate, CertificateParams, CustomExtension, DistinguishedName, KeyPair,
 };
+
+#[cfg(feature = "occlum")]
 use x509_parser::{nom::Parser, oid_registry::Oid, prelude::X509CertificateParser, public_key};
 
 pub trait CertificateBuilder: Send + Sync {
@@ -108,6 +114,12 @@ pub trait RaTlsCertificate {
 }
 
 impl RaTlsCertificate for rustls::Certificate {
+    #[cfg(not(feature = "occlum"))]
+    fn verify_quote(&self, _: &RaTlsConfig) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+
+    #[cfg(feature = "occlum")]
     fn verify_quote(&self, config: &RaTlsConfig) -> Result<(), Box<dyn Error>> {
         let mut parser = X509CertificateParser::new().with_deep_parse_extensions(true);
         let (_, x509) = parser.parse(self.as_ref()).unwrap();

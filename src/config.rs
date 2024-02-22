@@ -1,4 +1,8 @@
-use crate::{error::RaTlsError, RaTlsConfigBuilder};
+use crate::RaTlsConfigBuilder;
+
+#[cfg(feature = "occlum")]
+use crate::error::RaTlsError;
+#[cfg(feature = "occlum")]
 use occlum_sgx::SGXQuote;
 
 pub use occlum_sgx::SGXMeasurement;
@@ -6,9 +10,11 @@ use rustls::{ClientConfig, ServerConfig};
 
 #[derive(Default)]
 pub struct RaTlsConfig {
+    #[cfg(feature = "occlum")]
     pub(crate) allowed_instances: Vec<InstanceMeasurement>,
 }
 
+#[cfg(feature = "occlum")]
 #[derive(Default, Clone)]
 pub struct InstanceMeasurement {
     pub(crate) mrsigners: Option<Vec<SGXMeasurement>>,
@@ -17,6 +23,7 @@ pub struct InstanceMeasurement {
     pub(crate) versions: Option<Vec<u16>>,
 }
 
+#[cfg(feature = "occlum")]
 impl InstanceMeasurement {
     pub fn new() -> Self {
         Self::default()
@@ -92,11 +99,13 @@ impl RaTlsConfig {
         Self::default()
     }
 
+    #[cfg(feature = "occlum")]
     pub fn allow_instance_measurement(mut self, instance_measurement: InstanceMeasurement) -> Self {
         self.allowed_instances.push(instance_measurement);
         self
     }
 
+    #[cfg(feature = "occlum")]
     pub(crate) fn is_allowed_quote(&self, quote: &SGXQuote) -> Result<(), RaTlsError> {
         match self
             .allowed_instances

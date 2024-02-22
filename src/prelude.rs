@@ -1,5 +1,8 @@
+pub use crate::RaTlsConfig;
 pub use crate::SGXMeasurement;
-pub use crate::{InstanceMeasurement, RaTlsConfig};
+
+#[cfg(feature = "occlum")]
+pub use crate::InstanceMeasurement;
 
 #[cfg(feature = "reqwest")]
 pub use crate::reqwest::ReqwestUseRatls;

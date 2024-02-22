@@ -24,5 +24,5 @@ pub use crate::http::actix_web;
 pub use crate::http::reqwest;
 
 pub trait RaTlsConfigBuilder<T> {
-    fn from_ratls_config(config: RaTlsConfig) -> T;
+    fn from_ratls_config(config: RaTlsConfig) -> Result<T, RaTlsError>;
 }

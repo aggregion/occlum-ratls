@@ -1,12 +1,13 @@
 use rustls::{
     server::{ClientCertVerified, ClientCertVerifier, ResolvesServerCert},
+    sign::CertifiedKey,
     Certificate, DistinguishedName, Error, ServerConfig,
 };
 use std::{sync::Arc, time::SystemTime};
 
 use crate::{
     cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
-    RaTlsConfig, RaTlsConfigBuilder,
+    RaTlsConfig, RaTlsConfigBuilder, RaTlsError,
 };
 
 pub struct RaTlsClientCertVerifier {
@@ -26,9 +27,10 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
         _intermediates: &[Certificate],
         _now: SystemTime,
     ) -> Result<ClientCertVerified, Error> {
-        end_entity
-            .verify_quote(&self.config)
-            .map_err(|e| rustls::Error::General(e.to_string()))?;
+        end_entity.verify_quote(&self.config).map_err(|e| {
+            println!("{:?}", e);
+            rustls::Error::General(e.to_string())
+        })?;
 
         Ok(ClientCertVerified::assertion())
     }
@@ -39,22 +41,14 @@ impl ClientCertVerifier for RaTlsClientCertVerifier {
 }
 
 pub struct RaTlsServerCertResolver {
-    cert: Option<std::sync::Arc<rustls::sign::CertifiedKey>>,
-}
-
-impl Default for RaTlsServerCertResolver {
-    fn default() -> Self {
-        let builder = RaTlsCertificateBuilder::new().with_common_name("Client".to_string());
-        let cert = builder.build().ok().map(Arc::new);
-        Self { cert }
-    }
+    cert: Arc<CertifiedKey>,
 }
 
 impl RaTlsServerCertResolver {
-    pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+    pub fn new() -> Result<Self, RaTlsError> {
+        let builder = RaTlsCertificateBuilder::new().with_common_name("Client".to_string());
+        let cert = builder.build().map(Arc::new)?;
+        Ok(Self { cert })
     }
 }
 
@@ -62,16 +56,16 @@ impl ResolvesServerCert for RaTlsServerCertResolver {
     fn resolve(
         &self,
         _client_hello: rustls::server::ClientHello,
-    ) -> Option<std::sync::Arc<rustls::sign::CertifiedKey>> {
-        self.cert.clone()
+    ) -> Option<std::sync::Arc<CertifiedKey>> {
+        Some(self.cert.clone())
     }
 }
 
 impl RaTlsConfigBuilder<ServerConfig> for ServerConfig {
-    fn from_ratls_config(config: RaTlsConfig) -> Self {
-        Self::builder()
+    fn from_ratls_config(config: RaTlsConfig) -> Result<Self, RaTlsError> {
+        Ok(Self::builder()
             .with_safe_defaults()
             .with_client_cert_verifier(Arc::new(RaTlsClientCertVerifier::new(config)))
-            .with_cert_resolver(Arc::new(RaTlsServerCertResolver::new()))
+            .with_cert_resolver(Arc::new(RaTlsServerCertResolver::new()?)))
     }
 }

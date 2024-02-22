@@ -1,7 +1,5 @@
-use crate::RaTlsConfigBuilder;
+use crate::{RaTlsConfigBuilder, RaTlsError};
 
-#[cfg(feature = "occlum")]
-use crate::error::RaTlsError;
 #[cfg(feature = "occlum")]
 use occlum_sgx::SGXQuote;
 
@@ -120,11 +118,11 @@ impl RaTlsConfig {
         }
     }
 
-    pub fn into_server_config(self) -> ServerConfig {
+    pub fn into_server_config(self) -> Result<ServerConfig, RaTlsError> {
         ServerConfig::from_ratls_config(self)
     }
 
-    pub fn into_client_config(self) -> ClientConfig {
+    pub fn into_client_config(self) -> Result<ClientConfig, RaTlsError> {
         ClientConfig::from_ratls_config(self)
     }
 }

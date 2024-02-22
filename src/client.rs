@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use crate::{
     cert::{CertificateBuilder, RaTlsCertificate, RaTlsCertificateBuilder},
-    RaTlsConfig, RaTlsConfigBuilder,
+    RaTlsConfig, RaTlsConfigBuilder, RaTlsError,
 };
 use rustls::{
     client::{ResolvesClientCert, ServerCertVerified, ServerCertVerifier},
+    sign::CertifiedKey,
     ClientConfig,
 };
 
@@ -38,22 +39,14 @@ impl ServerCertVerifier for RaTlsServerCertVerifier {
 }
 
 pub struct RaTlsClientCertResolver {
-    cert: Option<Arc<rustls::sign::CertifiedKey>>,
-}
-
-impl Default for RaTlsClientCertResolver {
-    fn default() -> Self {
-        let builder = RaTlsCertificateBuilder::new().with_common_name("Client".to_string());
-        let cert = builder.build().ok().map(Arc::new);
-        Self { cert }
-    }
+    cert: Arc<CertifiedKey>,
 }
 
 impl RaTlsClientCertResolver {
-    pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+    pub fn new() -> Result<Self, RaTlsError> {
+        let builder = RaTlsCertificateBuilder::new().with_common_name("Client".to_string());
+        let cert = builder.build().map(Arc::new)?;
+        Ok(Self { cert })
     }
 }
 
@@ -62,8 +55,8 @@ impl ResolvesClientCert for RaTlsClientCertResolver {
         &self,
         _acceptable_issuers: &[&[u8]],
         _sigschemes: &[rustls::SignatureScheme],
-    ) -> Option<Arc<rustls::sign::CertifiedKey>> {
-        self.cert.clone()
+    ) -> Option<Arc<CertifiedKey>> {
+        Some(self.cert.clone())
     }
 
     fn has_certs(&self) -> bool {
@@ -72,10 +65,10 @@ impl ResolvesClientCert for RaTlsClientCertResolver {
 }
 
 impl RaTlsConfigBuilder<ClientConfig> for ClientConfig {
-    fn from_ratls_config(config: RaTlsConfig) -> Self {
-        Self::builder()
+    fn from_ratls_config(config: RaTlsConfig) -> Result<Self, RaTlsError> {
+        Ok(Self::builder()
             .with_safe_defaults()
             .with_custom_certificate_verifier(Arc::new(RaTlsServerCertVerifier::new(config)))
-            .with_client_cert_resolver(Arc::new(RaTlsClientCertResolver::new()))
+            .with_client_cert_resolver(Arc::new(RaTlsClientCertResolver::new()?)))
     }
 }
